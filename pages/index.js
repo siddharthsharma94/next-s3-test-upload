@@ -6,37 +6,55 @@ import { DragDrop } from '@uppy/react';
 import XHRUpload from '@uppy/xhr-upload';
 
 export default function Home() {
-  const uppy = new Uppy({
-    meta: { type: 'avatar' },
-    restrictions: { maxNumberOfFiles: 5 },
-    autoProceed: true,
+  // const uppy = new Uppy({
+  //   meta: { type: 'avatar' },
+  //   restrictions: { maxNumberOfFiles: 5 },
+  //   autoProceed: true,
+  // });
+
+  // uppy.on('file-added', (result) => {
+  //   console.log(result);
+  // });
+
+  // uppy.use(XHRUpload, {
+  //   bundle: true,
+  //   endpoint: '/api/upload',
+  //   formData: true,
+  // });
+  const { acceptedFiles, getRootProps, getInputProps } = useDropzone({
+    onDrop: async (acceptedFiles) => {
+      let formData = new FormData();
+
+      acceptedFiles.map((file) => {
+        formData.append('file', file, file.name);
+      });
+
+      const uploadFile = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      }).then((res) => res.json());
+    },
   });
 
-  uppy.on('file-added', (result) => {
-    console.log(result);
-  });
-
-  uppy.use(XHRUpload, {
-    bundle: true,
-    endpoint: '/api/upload',
-    formData: true,
-  });
+  const files = acceptedFiles.map((file) => (
+    <li key={file.path}>
+      {file.path} - {file.size} bytes
+    </li>
+  ));
 
   return (
     <div>
       <h1>Upload File</h1>
-      <DragDrop
-        uppy={uppy}
-        locale={{
-          strings: {
-            // Text to show on the droppable area.
-            // `%{browse}` is replaced with a link that opens the system file selection dialog.
-            dropHereOr: 'Drop here or %{browse}',
-            // Used as the label for the link that opens the system file selection dialog.
-            browse: 'browse',
-          },
-        }}
-      />
+      <section className="container">
+        <div {...getRootProps({ className: 'dropzone' })}>
+          <input {...getInputProps()} />
+          <p>Drag 'n' drop some files here, or click to select files</p>
+        </div>
+        <aside>
+          <h4>Files</h4>
+          <ul>{files}</ul>
+        </aside>
+      </section>
     </div>
   );
 }

@@ -15,18 +15,15 @@ export default (req, res) => {
   form.keepExtensions = true;
   const files = [];
 
-  form.on('field', function (field, value) {});
+  // form.on('field', function (field, value) {});
   form.on('file', function (field, file) {
     files.push(file);
   });
-
   form.on('end', function () {
     const path = files[0].filepath;
     const image = fs.readFileSync(path);
     console.log(image);
   });
 
-  form.parse(req, async (err, fields, files) => {
-    // console.log('form files in parse!', files);
-  });
+  form.parse(req);
 };
