@@ -1,45 +1,49 @@
-import Head from 'next/head';
-import styles from '../styles/Home.module.css';
 import { useDropzone } from 'react-dropzone';
-import Uppy from '@uppy/core';
-import { DragDrop } from '@uppy/react';
-import XHRUpload from '@uppy/xhr-upload';
+import { useState, useEffect } from 'react';
+import { useImmer } from 'use-immer';
 
 export default function Home() {
-  // const uppy = new Uppy({
-  //   meta: { type: 'avatar' },
-  //   restrictions: { maxNumberOfFiles: 5 },
-  //   autoProceed: true,
-  // });
+  const [files, setFiles] = useImmer([{ file: null, preview: null }]);
 
-  // uppy.on('file-added', (result) => {
-  //   console.log(result);
-  // });
+  useEffect(() => {
+    // Make sure to revoke the data uris to avoid memory leaks, will run on unmount
+    return () => files.forEach((file) => URL.revokeObjectURL(file.preview));
+  }, []);
 
-  // uppy.use(XHRUpload, {
-  //   bundle: true,
-  //   endpoint: '/api/upload',
-  //   formData: true,
-  // });
   const { acceptedFiles, getRootProps, getInputProps } = useDropzone({
+    accept: {
+      'image/*': [],
+    },
     onDrop: async (acceptedFiles) => {
       let formData = new FormData();
 
       acceptedFiles.map((file) => {
         formData.append('file', file, file.name);
+
+        setFiles((draft) => {
+          draft.push(Object.assign(file, { preview: URL.createObjectURL }));
+        });
       });
 
-      const uploadFile = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      }).then((res) => res.json());
+      // await fetch('/api/upload', {
+      //   method: 'POST',
+      //   body: formData,
+      // }).then((res) => res.json());
     },
   });
 
-  const files = acceptedFiles.map((file) => (
-    <li key={file.path}>
-      {file.path} - {file.size} bytes
-    </li>
+  const thumbs = files.map((file) => (
+    <div key={file.name}>
+      <div>
+        <img
+          src={file.preview}
+          // Revoke data uri after image is loaded
+          onLoad={() => {
+            URL.revokeObjectURL(file.preview);
+          }}
+        />
+      </div>
+    </div>
   ));
 
   return (
@@ -53,6 +57,7 @@ export default function Home() {
         <aside>
           <h4>Files</h4>
           <ul>{files}</ul>
+          {thumbs}
         </aside>
       </section>
     </div>
